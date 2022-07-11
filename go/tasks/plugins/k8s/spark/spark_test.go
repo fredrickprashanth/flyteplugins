@@ -336,6 +336,24 @@ func TestBuildResourceSpark(t *testing.T) {
 
 	// Set spark custom feature config.
 	assert.NoError(t, setSparkConfig(&Config{
+		SparkPodSpecTemplate: corev1.PodSpec{
+			InitContainers: []corev1.Container{
+				corev1.Container{
+					Name: "init-container-0",
+				},
+			},
+			Tolerations: []corev1.Toleration{
+				corev1.Toleration{
+					Key:      "group",
+					Operator: "Equals",
+					Value:    "spark",
+					Effect:   "NoSchedule",
+				},
+			},
+			NodeSelector: map[string]string{
+				"group": "spark",
+			},
+		},
 		Features: []Feature{
 			{
 				Name:        "feature1",
@@ -439,19 +457,18 @@ func TestBuildResourceSpark(t *testing.T) {
 	assert.Equal(t, dummySparkConf["spark.executor.memory"], *sparkApp.Spec.Executor.Memory)
 	assert.Equal(t, dummySparkConf["spark.batchScheduler"], *sparkApp.Spec.BatchScheduler)
 
-	// Validate Interruptible Toleration and NodeSelector set for Executor but not Driver.
-	assert.Equal(t, 0, len(sparkApp.Spec.Driver.Tolerations))
-	assert.Equal(t, 0, len(sparkApp.Spec.Driver.NodeSelector))
+	assert.Equal(t, 1, len(sparkApp.Spec.Driver.Tolerations))
+	assert.Equal(t, 1, len(sparkApp.Spec.Driver.NodeSelector))
 
 	assert.Equal(t, 1, len(sparkApp.Spec.Executor.Tolerations))
 	assert.Equal(t, 1, len(sparkApp.Spec.Executor.NodeSelector))
 
 	tol := sparkApp.Spec.Executor.Tolerations[0]
-	assert.Equal(t, tol.Key, "x/flyte")
-	assert.Equal(t, tol.Value, "interruptible")
-	assert.Equal(t, tol.Operator, corev1.TolerationOperator("Equal"))
+	assert.Equal(t, tol.Key, "group")
+	assert.Equal(t, tol.Operator, corev1.TolerationOperator("Equals"))
+	assert.Equal(t, tol.Value, "spark")
 	assert.Equal(t, tol.Effect, corev1.TaintEffect("NoSchedule"))
-	assert.Equal(t, "true", sparkApp.Spec.Executor.NodeSelector["x/interruptible"])
+	assert.Equal(t, "spark", sparkApp.Spec.Executor.NodeSelector["group"])
 
 	for confKey, confVal := range dummySparkConf {
 		exists := false
@@ -514,10 +531,10 @@ func TestBuildResourceSpark(t *testing.T) {
 	assert.True(t, ok)
 
 	// Validate Interruptible Toleration and NodeSelector not set  for both Driver and Executors.
-	assert.Equal(t, 0, len(sparkApp.Spec.Driver.Tolerations))
-	assert.Equal(t, 0, len(sparkApp.Spec.Driver.NodeSelector))
-	assert.Equal(t, 0, len(sparkApp.Spec.Executor.Tolerations))
-	assert.Equal(t, 0, len(sparkApp.Spec.Executor.NodeSelector))
+	assert.Equal(t, 1, len(sparkApp.Spec.Driver.Tolerations))
+	assert.Equal(t, 1, len(sparkApp.Spec.Driver.NodeSelector))
+	assert.Equal(t, 1, len(sparkApp.Spec.Executor.Tolerations))
+	assert.Equal(t, 1, len(sparkApp.Spec.Executor.NodeSelector))
 
 	// Case 4: Invalid Spark Task-Template
 	taskTemplate.Custom = nil

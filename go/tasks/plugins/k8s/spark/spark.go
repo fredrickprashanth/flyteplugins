@@ -103,6 +103,9 @@ func (sparkResourceHandler) BuildResource(ctx context.Context, taskCtx pluginsCo
 			Labels:           labels,
 			EnvVars:          sparkEnvVars,
 			Image:            &container.Image,
+			InitContainers:   GetSparkConfig().SparkPodSpecTemplate.InitContainers,
+			Tolerations:      GetSparkConfig().SparkPodSpecTemplate.Tolerations,
+			NodeSelector:     GetSparkConfig().SparkPodSpecTemplate.NodeSelector,
 			SecurityContenxt: config.GetK8sPluginConfig().DefaultPodSecurityContext.DeepCopy(),
 			DNSConfig:        config.GetK8sPluginConfig().DefaultPodDNSConfig.DeepCopy(),
 		},
@@ -115,6 +118,9 @@ func (sparkResourceHandler) BuildResource(ctx context.Context, taskCtx pluginsCo
 			Labels:           labels,
 			Image:            &container.Image,
 			EnvVars:          sparkEnvVars,
+			InitContainers:   GetSparkConfig().SparkPodSpecTemplate.InitContainers,
+			Tolerations:      GetSparkConfig().SparkPodSpecTemplate.Tolerations,
+			NodeSelector:     GetSparkConfig().SparkPodSpecTemplate.NodeSelector,
 			SecurityContenxt: config.GetK8sPluginConfig().DefaultPodSecurityContext.DeepCopy(),
 			DNSConfig:        config.GetK8sPluginConfig().DefaultPodDNSConfig.DeepCopy(),
 		},
@@ -225,11 +231,6 @@ func (sparkResourceHandler) BuildResource(ctx context.Context, taskCtx pluginsCo
 		j.Spec.MainClass = &sparkJob.MainClass
 	}
 
-	// Add Tolerations/NodeSelector to only Executor pods.
-	if taskCtx.TaskExecutionMetadata().IsInterruptible() {
-		j.Spec.Executor.Tolerations = config.GetK8sPluginConfig().InterruptibleTolerations
-		j.Spec.Executor.NodeSelector = config.GetK8sPluginConfig().InterruptibleNodeSelector
-	}
 	return j, nil
 }
 

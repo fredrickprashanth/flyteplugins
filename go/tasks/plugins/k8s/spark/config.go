@@ -3,6 +3,7 @@ package spark
 import (
 	pluginsConfig "github.com/flyteorg/flyteplugins/go/tasks/config"
 	"github.com/flyteorg/flyteplugins/go/tasks/logs"
+	v1 "k8s.io/api/core/v1"
 )
 
 //go:generate pflags Config --default-var=defaultConfig
@@ -26,6 +27,7 @@ type Config struct {
 	SparkHistoryServerURL string            `json:"spark-history-server-url" pflag:",URL for SparkHistory Server that each job will publish the execution history to."`
 	Features              []Feature         `json:"features" pflag:"-,List of optional features supported."`
 	LogConfig             LogConfig         `json:"logs" pflag:",Config for log links for spark applications."`
+	SparkPodSpecTemplate  v1.PodSpec        `json:"spark-pod-spec-template" pflag:",Pod spec template for spark pods."`
 }
 
 type LogConfig struct {
